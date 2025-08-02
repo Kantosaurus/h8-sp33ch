@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from typing import Dict, List, Tuple, Optional
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -22,15 +23,41 @@ from models.adaboost_model import AdaBoostModel
 from models.catboost_model import CatBoostModel
 from models.meta_classifier import MetaClassifier
 
+# Import multi-view feature engineering
+from feature_engineering import MultiViewFeatureEngineering, create_multi_view_features
+
+# Import view-specialized models
+from view_specialized_models import ViewSpecializedModels, create_view_specialized_ensemble
+
+# Import Logistic Regression meta-classifier
+from logistic_meta_classifier import LogisticMetaClassifier, create_logistic_meta_classifier
+
+# Import advanced techniques
+from boosted_stacking_ensemble import BoostedStackingEnsemble, create_boosted_stacking_ensemble
+from catboost_text_model import CatBoostTextModel, create_catboost_text_model
+from rule_augmented_ml import RuleAugmentedML, create_rule_augmented_ml
+
 class HateSpeechEnsemble:
     """
     Main ensemble system for hate speech detection
     Combines multiple base models with a meta-classifier
     """
     
-    def __init__(self, random_state=42):
+    def __init__(self, random_state=42, use_view_specialized=True, use_logistic_meta=True, 
+                 use_boosted_stacking=True, use_catboost_text=True, use_rule_augmented=True):
         self.random_state = random_state
+        self.use_view_specialized = use_view_specialized
+        self.use_logistic_meta = use_logistic_meta
+        self.use_boosted_stacking = use_boosted_stacking
+        self.use_catboost_text = use_catboost_text
+        self.use_rule_augmented = use_rule_augmented
+        
         self.base_models = {}
+        self.view_specialized_models = None
+        self.logistic_meta_classifier = None
+        self.boosted_stacking_ensemble = None
+        self.catboost_text_model = None
+        self.rule_augmented_ml = None
         self.meta_classifier = MetaClassifier(random_state=random_state)
         self.is_trained = False
         self.results = {}
@@ -57,30 +84,197 @@ class HateSpeechEnsemble:
             self.meta_classifier.add_base_model(name, model)
         
         print(f"Initialized {len(self.base_models)} base models")
-        
-    def load_data(self):
+    
+    def train_view_specialized_models(self, features_dict: Dict[str, np.ndarray], y: np.ndarray):
         """
-        Load and prepare the dataset
+        Train view-specialized models for each feature view
+        
+        Args:
+            features_dict: Dictionary with features for each view
+            y: Target labels
+        """
+        if not self.use_view_specialized:
+            print("View-specialized models disabled")
+            return
+        
+        print("\n" + "=" * 60)
+        print("TRAINING VIEW-SPECIALIZED MODELS")
+        print("=" * 60)
+        
+        # Create and train view-specialized models
+        self.view_specialized_models = create_view_specialized_ensemble(
+            features_dict, y, random_state=self.random_state
+        )
+        
+        # Extract meta-features from view-specialized models
+        view_meta_features = self.view_specialized_models.extract_view_meta_features(features_dict)
+        
+        print(f"\nView-specialized meta-features shape: {view_meta_features.shape}")
+        print("Meta-features include:")
+        print("  - Predicted probabilities from each view model")
+        print("  - Confidence scores (margin between top two probabilities)")
+        
+        return view_meta_features
+    
+    def train_logistic_meta_classifier(self, features_dict: Dict[str, np.ndarray], y: np.ndarray):
+        """
+        Train Logistic Regression meta-classifier using view-specialized models' outputs
+        
+        Args:
+            features_dict: Dictionary with features for each view
+            y: Target labels
+        """
+        if not self.use_logistic_meta:
+            print("Logistic meta-classifier disabled")
+            return
+        
+        if self.view_specialized_models is None:
+            print("View-specialized models not available. Train them first.")
+            return
+        
+        print("\n" + "=" * 60)
+        print("TRAINING LOGISTIC REGRESSION META-CLASSIFIER")
+        print("=" * 60)
+        
+        # Create and train Logistic Regression meta-classifier
+        self.logistic_meta_classifier = create_logistic_meta_classifier(
+            self.view_specialized_models, features_dict, y, random_state=self.random_state
+        )
+        
+        # Store results
+        self.results['logistic_meta'] = {
+            'trained': True,
+            'meta_features_shape': self.logistic_meta_classifier.results['meta_features_shape']
+        }
+        
+        return self.logistic_meta_classifier
+    
+    def get_view_specialized_predictions(self, features_dict: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """
+        Get predictions from view-specialized models
+        
+        Args:
+            features_dict: Dictionary with features for each view
+            
+        Returns:
+            Dictionary with predictions and confidence scores
+        """
+        if self.view_specialized_models is None:
+            raise ValueError("View-specialized models not trained")
+        
+        predictions = self.view_specialized_models.predict_views(features_dict)
+        confidence_scores = self.view_specialized_models.get_confidence_scores(features_dict)
+        
+        return {
+            'predictions': predictions,
+            'confidence_scores': confidence_scores,
+            'meta_features': self.view_specialized_models.extract_view_meta_features(features_dict)
+        }
+        
+    def load_data(self, use_multi_view=True, fasttext_model_path=None, use_feature_union=True):
+        """
+        Load and prepare the dataset with multi-view feature engineering
+        
+        Args:
+            use_multi_view: Whether to use multi-view feature engineering
+            fasttext_model_path: Path to FastText model (optional)
+            use_feature_union: Whether to use FeatureUnion for fusion (recommended)
         """
         print("Loading data...")
         
-        # Load main data - fix paths to point to data directory
-        train_data = pd.read_csv('data/train.csv')
-        test_data = pd.read_csv('data/test.csv')
+        try:
+            # Load main data
+            train_data = pd.read_csv('data/train.csv')
+            test_data = pd.read_csv('data/test.csv')
+        except FileNotFoundError as e:
+            print(f"Error: Data files not found. {e}")
+            print("Please ensure 'data/train.csv' and 'data/test.csv' exist.")
+            raise
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            raise
         
-        # Load TF-IDF features - fix paths to point to data directory
-        train_tfidf = pd.read_csv('data/train_tfidf_features.csv')
-        test_tfidf = pd.read_csv('data/test_tfidf_features.csv')
-        
-        # Prepare features and labels
-        X_train_tfidf = train_tfidf.values
-        X_test_tfidf = test_tfidf.values
+        # Extract text and labels
+        train_texts = train_data['post'].values
+        test_texts = test_data['post'].values
         y_train = train_data['label'].values
         
-        print(f"Training set shape: {X_train_tfidf.shape}")
-        print(f"Test set shape: {X_test_tfidf.shape}")
+        # Validate data
+        if len(train_texts) == 0 or len(test_texts) == 0:
+            raise ValueError("Empty text data found")
         
-        return X_train_tfidf, X_test_tfidf, y_train, test_data['id'].values, train_data['text'].values, test_data['text'].values
+        if len(y_train) != len(train_texts):
+            raise ValueError("Mismatch between labels and text data lengths")
+        
+        if not all(isinstance(text, str) for text in train_texts):
+            raise ValueError("Non-string values found in text data")
+        
+        print(f"Data loaded successfully:")
+        print(f"  Training samples: {len(train_texts)}")
+        print(f"  Test samples: {len(test_texts)}")
+        print(f"  Labels: {len(y_train)}")
+        
+        # Store text data for advanced models
+        self.train_texts = train_texts
+        self.test_texts = test_texts
+        
+        if use_multi_view:
+            print("\n" + "=" * 60)
+            print("MULTI-VIEW FEATURE ENGINEERING")
+            print("=" * 60)
+            
+            # Create multi-view features with FeatureUnion fusion
+            X_train, X_test = create_multi_view_features(
+                train_texts, 
+                test_texts, 
+                fasttext_model_path=fasttext_model_path,
+                use_feature_union=use_feature_union
+            )
+            
+            print(f"\nMulti-view features created:")
+            print(f"Training set shape: {X_train.shape}")
+            print(f"Test set shape: {X_test.shape}")
+            
+            if use_feature_union:
+                print(f"Feature fusion: FeatureUnion with proper normalization")
+            else:
+                print(f"Feature fusion: Simple concatenation")
+            
+            # For view-specialized models, we need individual view features
+            if self.use_view_specialized:
+                print("\nCreating individual view features for specialized models...")
+                
+                # Create feature engineering instance to get individual views
+                fe = MultiViewFeatureEngineering(
+                    max_tfidf_features=20000,
+                    fasttext_model_path=fasttext_model_path,
+                    use_feature_union=use_feature_union
+                )
+                
+                # Get individual view features
+                train_features_dict = fe.fit_transform(train_texts)
+                test_features_dict = fe.transform(test_texts)
+                
+                # Store for later use
+                self.train_features_dict = train_features_dict
+                self.test_features_dict = test_features_dict
+                
+                print("Individual view features created for specialized models")
+            
+        else:
+            print("\nUsing pre-computed TF-IDF features...")
+            
+            # Load pre-computed TF-IDF features
+            train_tfidf = pd.read_csv('data/train_tfidf_features.csv')
+            test_tfidf = pd.read_csv('data/test_tfidf_features.csv')
+            
+            X_train = train_tfidf.values
+            X_test = test_tfidf.values
+            
+            print(f"Training set shape: {X_train.shape}")
+            print(f"Test set shape: {X_test.shape}")
+        
+        return X_train, X_test, y_train, test_data['id'].values, train_texts, test_texts
         
     def train_ensemble(self, X_train, y_train, X_val=None, y_val=None, cv_folds=5):
         """
@@ -93,6 +287,44 @@ class HateSpeechEnsemble:
         # Initialize models if not already done
         if not self.base_models:
             self.initialize_models()
+        
+        # Train view-specialized models if enabled
+        if self.use_view_specialized and hasattr(self, 'train_features_dict'):
+            print("\nTraining view-specialized models...")
+            view_meta_features = self.train_view_specialized_models(
+                self.train_features_dict, y_train
+            )
+            self.results['view_specialized'] = {
+                'meta_features_shape': view_meta_features.shape,
+                'models_trained': True
+            }
+            
+                    # Train Logistic Regression meta-classifier if enabled
+        if self.use_logistic_meta:
+            print("\nTraining Logistic Regression meta-classifier...")
+            self.train_logistic_meta_classifier(self.train_features_dict, y_train)
+        
+        # Train boosted stacking ensemble if enabled
+        if self.use_boosted_stacking and hasattr(self, 'train_features_dict'):
+            print("\nTraining boosted stacking ensemble...")
+            self.train_boosted_stacking_ensemble(self.train_features_dict, y_train)
+        
+        # Train CatBoost text model if enabled
+        if self.use_catboost_text and hasattr(self, 'train_texts'):
+            print("\nTraining CatBoost text model...")
+            # Create additional features for CatBoost
+            additional_features = {
+                'text_length': np.array([len(text) for text in self.train_texts]),
+                'word_count': np.array([len(text.split()) for text in self.train_texts])
+            }
+            self.train_catboost_text_model(self.train_texts, y_train, additional_features)
+        
+        # Train rule-augmented ML if enabled
+        if self.use_rule_augmented and hasattr(self, 'train_texts'):
+            print("\nTraining rule-augmented ML system...")
+            # Use lexical features as ML features for rule-augmented system
+            ml_features = self.train_features_dict.get('lexical', None) if hasattr(self, 'train_features_dict') else None
+            self.train_rule_augmented_ml(self.train_texts, y_train, ml_features)
         
         # Train all base models
         print("\nTraining base models...")
@@ -294,6 +526,248 @@ class HateSpeechEnsemble:
         
         return agreement_df
     
+    def evaluate_view_specialized_models(self, X_test, y_test):
+        """
+        Evaluate view-specialized models separately
+        """
+        if not self.use_view_specialized or self.view_specialized_models is None:
+            print("View-specialized models not available")
+            return
+        
+        if not hasattr(self, 'test_features_dict'):
+            print("Test features dictionary not available")
+            return
+        
+        print("\n" + "=" * 60)
+        print("EVALUATING VIEW-SPECIALIZED MODELS")
+        print("=" * 60)
+        
+        # Evaluate view-specialized models
+        evaluation_results = self.view_specialized_models.evaluate_models(
+            self.test_features_dict, y_test
+        )
+        
+        # Compare performance
+        comparison_df = self.view_specialized_models.compare_view_performance(evaluation_results)
+        
+        # Store results
+        self.results['view_specialized_evaluation'] = evaluation_results
+        
+        return evaluation_results
+    
+    def evaluate_logistic_meta_classifier(self, X_test, y_test):
+        """
+        Evaluate the Logistic Regression meta-classifier
+        """
+        if not self.use_logistic_meta or self.logistic_meta_classifier is None:
+            print("Logistic meta-classifier not available")
+            return
+        
+        if not hasattr(self, 'test_features_dict'):
+            print("Test features dictionary not available")
+            return
+        
+        print("\n" + "=" * 60)
+        print("EVALUATING LOGISTIC REGRESSION META-CLASSIFIER")
+        print("=" * 60)
+        
+        # Evaluate Logistic Regression meta-classifier
+        evaluation_results = self.logistic_meta_classifier.evaluate(
+            self.test_features_dict, y_test
+        )
+        
+        # Analyze feature importance
+        importance_df = self.logistic_meta_classifier.analyze_feature_importance()
+        
+        # Analyze threshold optimization
+        threshold_df = self.logistic_meta_classifier.analyze_threshold_optimization()
+        
+        # Store results
+        self.results['logistic_meta_evaluation'] = evaluation_results
+        
+        return evaluation_results
+    
+    def train_boosted_stacking_ensemble(self, features_dict: Dict[str, np.ndarray], y: np.ndarray):
+        """
+        Train boosted stacking ensemble with advanced meta-features
+        
+        Args:
+            features_dict: Dictionary with features for each view
+            y: Target labels
+        """
+        if not self.use_boosted_stacking:
+            print("Boosted stacking ensemble disabled")
+            return
+        
+        print("\n" + "=" * 60)
+        print("TRAINING BOOSTED STACKING ENSEMBLE")
+        print("=" * 60)
+        
+        # Create and train boosted stacking ensemble
+        self.boosted_stacking_ensemble = create_boosted_stacking_ensemble(
+            features_dict, y, random_state=self.random_state
+        )
+        
+        # Store results
+        self.results['boosted_stacking'] = {
+            'trained': True,
+            'meta_features_shape': self.boosted_stacking_ensemble.meta_features_train.shape
+        }
+        
+        return self.boosted_stacking_ensemble
+    
+    def train_catboost_text_model(self, texts: List[str], y: np.ndarray, 
+                                 additional_features: Dict[str, np.ndarray] = None):
+        """
+        Train CatBoost text model with built-in text transformer
+        
+        Args:
+            texts: List of text strings
+            y: Target labels
+            additional_features: Additional numerical features
+        """
+        if not self.use_catboost_text:
+            print("CatBoost text model disabled")
+            return
+        
+        print("\n" + "=" * 60)
+        print("TRAINING CATBOOST TEXT MODEL")
+        print("=" * 60)
+        
+        # Create and train CatBoost text model
+        self.catboost_text_model = create_catboost_text_model(
+            texts, y, additional_features, random_state=self.random_state
+        )
+        
+        # Store results
+        self.results['catboost_text'] = {
+            'trained': True,
+            'text_features_processed': len(texts)
+        }
+        
+        return self.catboost_text_model
+    
+    def train_rule_augmented_ml(self, texts: List[str], y: np.ndarray, 
+                               ml_features: np.ndarray = None):
+        """
+        Train rule-augmented ML system
+        
+        Args:
+            texts: List of text strings
+            y: Target labels
+            ml_features: ML features (optional)
+        """
+        if not self.use_rule_augmented:
+            print("Rule-augmented ML disabled")
+            return
+        
+        print("\n" + "=" * 60)
+        print("TRAINING RULE-AUGMENTED ML SYSTEM")
+        print("=" * 60)
+        
+        # Create and train rule-augmented ML system
+        self.rule_augmented_ml = create_rule_augmented_ml(
+            texts, y, ml_features, random_state=self.random_state
+        )
+        
+        # Store results
+        self.results['rule_augmented_ml'] = {
+            'trained': True,
+            'texts_processed': len(texts)
+        }
+        
+        return self.rule_augmented_ml
+    
+    def evaluate_boosted_stacking_ensemble(self, X_test, y_test):
+        """
+        Evaluate boosted stacking ensemble separately
+        """
+        if not self.use_boosted_stacking or self.boosted_stacking_ensemble is None:
+            print("Boosted stacking ensemble not available")
+            return
+        
+        if not hasattr(self, 'test_features_dict'):
+            print("Test features dictionary not available")
+            return
+        
+        print("\n" + "=" * 60)
+        print("EVALUATING BOOSTED STACKING ENSEMBLE")
+        print("=" * 60)
+        
+        # Evaluate boosted stacking ensemble
+        evaluation_results = self.boosted_stacking_ensemble.evaluate(
+            self.test_features_dict, y_test
+        )
+        
+        # Analyze meta-features
+        meta_analysis = self.boosted_stacking_ensemble.analyze_meta_features()
+        
+        # Store results
+        self.results['boosted_stacking_evaluation'] = evaluation_results
+        
+        return evaluation_results
+    
+    def evaluate_catboost_text_model(self, X_test, y_test):
+        """
+        Evaluate CatBoost text model separately
+        """
+        if not self.use_catboost_text or self.catboost_text_model is None:
+            print("CatBoost text model not available")
+            return
+        
+        if not hasattr(self, 'test_texts'):
+            print("Test texts not available")
+            return
+        
+        print("\n" + "=" * 60)
+        print("EVALUATING CATBOOST TEXT MODEL")
+        print("=" * 60)
+        
+        # Create additional features for evaluation
+        additional_features = {
+            'text_length': np.array([len(text) for text in self.test_texts]),
+            'word_count': np.array([len(text.split()) for text in self.test_texts])
+        }
+        
+        # Evaluate CatBoost text model
+        evaluation_results = self.catboost_text_model.evaluate(
+            self.test_texts, y_test, additional_features
+        )
+        
+        # Store results
+        self.results['catboost_text_evaluation'] = evaluation_results
+        
+        return evaluation_results
+    
+    def evaluate_rule_augmented_ml(self, X_test, y_test):
+        """
+        Evaluate rule-augmented ML system separately
+        """
+        if not self.use_rule_augmented or self.rule_augmented_ml is None:
+            print("Rule-augmented ML system not available")
+            return
+        
+        if not hasattr(self, 'test_texts'):
+            print("Test texts not available")
+            return
+        
+        print("\n" + "=" * 60)
+        print("EVALUATING RULE-AUGMENTED ML SYSTEM")
+        print("=" * 60)
+        
+        # Use lexical features as ML features for evaluation
+        ml_features = self.test_features_dict.get('lexical', None) if hasattr(self, 'test_features_dict') else None
+        
+        # Evaluate rule-augmented ML system
+        evaluation_results = self.rule_augmented_ml.evaluate(
+            self.test_texts, y_test, ml_features
+        )
+        
+        # Store results
+        self.results['rule_augmented_ml_evaluation'] = evaluation_results
+        
+        return evaluation_results
+    
     def create_submission(self, X_test, test_ids, filename='ensemble_submission.csv'):
         """
         Create submission file with predictions
@@ -348,33 +822,62 @@ class HateSpeechEnsemble:
 
 def main():
     """
-    Example usage of the ensemble system
+    Example usage of the ensemble system with multi-view feature engineering and view-specialized models
     """
     print("Hate Speech Detection Ensemble System")
     print("=" * 50)
     
-    # Initialize ensemble
-    ensemble = HateSpeechEnsemble(random_state=42)
-    
-    # Load data
-    X_train_tfidf, X_test_tfidf, y_train, test_ids, train_texts, test_texts = ensemble.load_data()
-    
-    # Split data for validation
-    X_train, X_val, y_train_split, y_val = train_test_split(
-        X_train_tfidf, y_train, test_size=0.2, random_state=42, stratify=y_train
+    # Initialize ensemble with all advanced techniques enabled
+    ensemble = HateSpeechEnsemble(
+        random_state=42, 
+        use_view_specialized=True, 
+        use_logistic_meta=True,
+        use_boosted_stacking=True,
+        use_catboost_text=True,
+        use_rule_augmented=True
     )
     
-    # Train ensemble
-    results = ensemble.train_ensemble(X_train, y_train_split, X_val, y_val)
+    # Load data with multi-view feature engineering and FeatureUnion fusion
+    # Set use_multi_view=True to use the new multi-view approach
+    # Set use_feature_union=True for proper feature fusion with normalization
+    # Set fasttext_model_path if you have a pre-trained FastText model
+    X_train, X_test, y_train, test_ids, train_texts, test_texts = ensemble.load_data(
+        use_multi_view=True,
+        use_feature_union=True,  # Use FeatureUnion for proper fusion
+        fasttext_model_path=None  # Set path to FastText model if available
+    )
+    
+    # Split data for validation
+    X_train_split, X_val, y_train_split, y_val = train_test_split(
+        X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+    )
+    
+    # Train ensemble (includes view-specialized models)
+    results = ensemble.train_ensemble(X_train_split, y_train_split, X_val, y_val)
+    
+    # Evaluate view-specialized models separately
+    view_results = ensemble.evaluate_view_specialized_models(X_test, y_train)
+    
+    # Evaluate Logistic Regression meta-classifier
+    logistic_results = ensemble.evaluate_logistic_meta_classifier(X_test, y_train)
+    
+    # Evaluate boosted stacking ensemble
+    boosted_results = ensemble.evaluate_boosted_stacking_ensemble(X_test, y_train)
+    
+    # Evaluate CatBoost text model
+    catboost_results = ensemble.evaluate_catboost_text_model(X_test, y_train)
+    
+    # Evaluate rule-augmented ML system
+    rule_results = ensemble.evaluate_rule_augmented_ml(X_test, y_train)
     
     # Evaluate ensemble
-    evaluation_results = ensemble.evaluate_ensemble(X_test_tfidf, y_train)
+    evaluation_results = ensemble.evaluate_ensemble(X_test, y_train)
     
     # Compare models
     comparison_df = ensemble.compare_models()
     
     # Create submission
-    submission = ensemble.create_submission(X_test_tfidf, test_ids)
+    submission = ensemble.create_submission(X_test, test_ids)
     
     # Save results
     ensemble.save_results()
