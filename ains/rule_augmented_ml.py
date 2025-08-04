@@ -290,7 +290,7 @@ class RuleAugmentedML:
             features.append(text_features)
         
         features = np.array(features)
-        print(f"✓ Extracted {features.shape[1]} rule features")
+        print(f"[OK] Extracted {features.shape[1]} rule features")
         
         return features
     
@@ -313,7 +313,7 @@ class RuleAugmentedML:
             weak_labels.append(int(rule_results['is_hate_speech']))
         
         weak_labels = np.array(weak_labels)
-        print(f"✓ Created {len(weak_labels)} weak labels")
+        print(f"[OK] Created {len(weak_labels)} weak labels")
         
         return weak_labels
     
@@ -556,7 +556,7 @@ class RuleAugmentedML:
         
         df = pd.DataFrame(rule_results)
         
-        print(f"✓ Analyzed {len(texts)} texts with rules")
+        print(f"[OK] Analyzed {len(texts)} texts with rules")
         return df
     
     def evaluate(self, texts: List[str], y: np.ndarray,

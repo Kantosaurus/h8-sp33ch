@@ -291,9 +291,43 @@ class HateSpeechEnsemble:
         # Train view-specialized models if enabled
         if self.use_view_specialized and hasattr(self, 'train_features_dict'):
             print("\nTraining view-specialized models...")
-            view_meta_features = self.train_view_specialized_models(
-                self.train_features_dict, y_train
-            )
+            
+            # Split the features dictionary to match the training data split
+            if X_val is not None and y_val is not None:
+                # Calculate the split indices based on the training data size
+                train_size = len(y_train)
+                # Handle sparse matrices properly
+                if hasattr(self.train_features_dict['lexical'], 'shape'):
+                    total_size = self.train_features_dict['lexical'].shape[0]
+                else:
+                    total_size = len(self.train_features_dict['lexical'])
+                
+                if train_size < total_size:
+                    # We need to split the features dictionary
+                    print(f"Splitting features: {total_size} -> {train_size} for training")
+                    
+                    # Create split feature dictionary
+                    split_features_dict = {}
+                    for view_name, features in self.train_features_dict.items():
+                        if hasattr(features, 'toarray'):
+                            # Handle sparse matrices
+                            split_features_dict[view_name] = features[:train_size]
+                        else:
+                            # Handle dense matrices
+                            split_features_dict[view_name] = features[:train_size]
+                    
+                    view_meta_features = self.train_view_specialized_models(
+                        split_features_dict, y_train
+                    )
+                else:
+                    view_meta_features = self.train_view_specialized_models(
+                        self.train_features_dict, y_train
+                    )
+            else:
+                view_meta_features = self.train_view_specialized_models(
+                    self.train_features_dict, y_train
+                )
+            
             self.results['view_specialized'] = {
                 'meta_features_shape': view_meta_features.shape,
                 'models_trained': True
@@ -302,29 +336,118 @@ class HateSpeechEnsemble:
                     # Train Logistic Regression meta-classifier if enabled
         if self.use_logistic_meta:
             print("\nTraining Logistic Regression meta-classifier...")
-            self.train_logistic_meta_classifier(self.train_features_dict, y_train)
+            
+            # Use the same split logic as view-specialized models
+            if X_val is not None and y_val is not None:
+                train_size = len(y_train)
+                if hasattr(self.train_features_dict['lexical'], 'shape'):
+                    total_size = self.train_features_dict['lexical'].shape[0]
+                else:
+                    total_size = len(self.train_features_dict['lexical'])
+                
+                if train_size < total_size:
+                    # Create split feature dictionary
+                    split_features_dict = {}
+                    for view_name, features in self.train_features_dict.items():
+                        if hasattr(features, 'toarray'):
+                            split_features_dict[view_name] = features[:train_size]
+                        else:
+                            split_features_dict[view_name] = features[:train_size]
+                    
+                    self.train_logistic_meta_classifier(split_features_dict, y_train)
+                else:
+                    self.train_logistic_meta_classifier(self.train_features_dict, y_train)
+            else:
+                self.train_logistic_meta_classifier(self.train_features_dict, y_train)
         
         # Train boosted stacking ensemble if enabled
         if self.use_boosted_stacking and hasattr(self, 'train_features_dict'):
             print("\nTraining boosted stacking ensemble...")
-            self.train_boosted_stacking_ensemble(self.train_features_dict, y_train)
+            
+            # Use the same split logic
+            if X_val is not None and y_val is not None:
+                train_size = len(y_train)
+                if hasattr(self.train_features_dict['lexical'], 'shape'):
+                    total_size = self.train_features_dict['lexical'].shape[0]
+                else:
+                    total_size = len(self.train_features_dict['lexical'])
+                
+                if train_size < total_size:
+                    # Create split feature dictionary
+                    split_features_dict = {}
+                    for view_name, features in self.train_features_dict.items():
+                        if hasattr(features, 'toarray'):
+                            split_features_dict[view_name] = features[:train_size]
+                        else:
+                            split_features_dict[view_name] = features[:train_size]
+                    
+                    self.train_boosted_stacking_ensemble(split_features_dict, y_train)
+                else:
+                    self.train_boosted_stacking_ensemble(self.train_features_dict, y_train)
+            else:
+                self.train_boosted_stacking_ensemble(self.train_features_dict, y_train)
         
         # Train CatBoost text model if enabled
         if self.use_catboost_text and hasattr(self, 'train_texts'):
             print("\nTraining CatBoost text model...")
-            # Create additional features for CatBoost
-            additional_features = {
-                'text_length': np.array([len(text) for text in self.train_texts]),
-                'word_count': np.array([len(text.split()) for text in self.train_texts])
-            }
-            self.train_catboost_text_model(self.train_texts, y_train, additional_features)
+            
+            # Split the text data to match the training split
+            if X_val is not None and y_val is not None:
+                train_size = len(y_train)
+                total_size = len(self.train_texts)
+                
+                if train_size < total_size:
+                    # Split text data
+                    split_texts = self.train_texts[:train_size]
+                    # Create additional features for CatBoost
+                    additional_features = {
+                        'text_length': np.array([len(text) for text in split_texts]),
+                        'word_count': np.array([len(text.split()) for text in split_texts])
+                    }
+                    self.train_catboost_text_model(split_texts, y_train, additional_features)
+                else:
+                    # Create additional features for CatBoost
+                    additional_features = {
+                        'text_length': np.array([len(text) for text in self.train_texts]),
+                        'word_count': np.array([len(text.split()) for text in self.train_texts])
+                    }
+                    self.train_catboost_text_model(self.train_texts, y_train, additional_features)
+            else:
+                # Create additional features for CatBoost
+                additional_features = {
+                    'text_length': np.array([len(text) for text in self.train_texts]),
+                    'word_count': np.array([len(text.split()) for text in self.train_texts])
+                }
+                self.train_catboost_text_model(self.train_texts, y_train, additional_features)
         
         # Train rule-augmented ML if enabled
         if self.use_rule_augmented and hasattr(self, 'train_texts'):
             print("\nTraining rule-augmented ML system...")
-            # Use lexical features as ML features for rule-augmented system
-            ml_features = self.train_features_dict.get('lexical', None) if hasattr(self, 'train_features_dict') else None
-            self.train_rule_augmented_ml(self.train_texts, y_train, ml_features)
+            
+            # Split the text data to match the training split
+            if X_val is not None and y_val is not None:
+                train_size = len(y_train)
+                total_size = len(self.train_texts)
+                
+                if train_size < total_size:
+                    # Split text data
+                    split_texts = self.train_texts[:train_size]
+                    # Use lexical features as ML features for rule-augmented system
+                    ml_features = None
+                    if hasattr(self, 'train_features_dict'):
+                        if hasattr(self.train_features_dict['lexical'], 'toarray'):
+                            ml_features = self.train_features_dict['lexical'][:train_size]
+                        else:
+                            ml_features = self.train_features_dict['lexical'][:train_size]
+                    self.train_rule_augmented_ml(split_texts, y_train, ml_features)
+                else:
+                    # Use lexical features as ML features for rule-augmented system
+                    ml_features = self.train_features_dict.get('lexical', None) if hasattr(self, 'train_features_dict') else None
+                    self.train_rule_augmented_ml(self.train_texts, y_train, ml_features)
+            else:
+                # Use lexical features as ML features for rule-augmented system
+                ml_features = self.train_features_dict.get('lexical', None) if hasattr(self, 'train_features_dict') else None
+                self.train_rule_augmented_ml(self.train_texts, y_train, ml_features)
         
         # Train all base models
         print("\nTraining base models...")

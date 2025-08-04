@@ -394,7 +394,7 @@ class MultiViewFeatureEngineering:
         """
         Fit and transform using FeatureUnion for proper feature fusion
         """
-        print("\n🔗 FEATURE FUSION WITH FEATUREUNION")
+        print("\n[LINK] FEATURE FUSION WITH FEATUREUNION")
         print("-" * 40)
         
         # Create transformers for each view
@@ -435,7 +435,7 @@ class MultiViewFeatureEngineering:
         # Store feature names
         self._extract_feature_names(lexical_transformer, semantic_transformer, stylistic_transformer)
         
-        print(f"✓ FeatureUnion fusion completed")
+        print(f"[OK] FeatureUnion fusion completed")
         print(f"  - Combined features shape: {combined_features.shape}")
         print(f"  - Lexical (sparse): {lexical_features.shape[1]} features")
         print(f"  - Semantic (dense): {semantic_features.shape[1]} features")
@@ -548,7 +548,7 @@ class MultiViewFeatureEngineering:
         lexical_features = self.lexical_vectorizer.fit_transform(texts)
         self.lexical_feature_names = self.lexical_vectorizer.get_feature_names_out()
         
-        print(f"✓ Word-level TF-IDF: {lexical_features.shape[1]} features")
+        print(f"[OK] Word-level TF-IDF: {lexical_features.shape[1]} features")
         print(f"  - N-grams: unigram + bigram + trigram")
         print(f"  - Max features: {self.max_tfidf_features}")
         
@@ -564,7 +564,7 @@ class MultiViewFeatureEngineering:
         char_features = char_vectorizer.fit_transform(texts)
         char_feature_names = [f"char_{name}" for name in char_vectorizer.get_feature_names_out()]
         
-        print(f"✓ Character-level TF-IDF: {char_features.shape[1]} features")
+        print(f"[OK] Character-level TF-IDF: {char_features.shape[1]} features")
         print(f"  - Character n-grams: 2-5")
         print(f"  - Good for obfuscated hate (e.g., 'b!tch')")
         
@@ -577,7 +577,7 @@ class MultiViewFeatureEngineering:
         # Update feature names
         self.lexical_feature_names = list(self.lexical_feature_names) + char_feature_names
         
-        print(f"✓ Total lexical features: {combined_features.shape[1]}")
+        print(f"[OK] Total lexical features: {combined_features.shape[1]}")
         
         return combined_features
     
@@ -622,26 +622,26 @@ class MultiViewFeatureEngineering:
         if self.fasttext_model is not None:
             fasttext_features = self._extract_fasttext_features(texts)
             semantic_features.append(fasttext_features)
-            print(f"✓ FastText embeddings: {fasttext_features.shape[1]} features")
+            print(f"[OK] FastText embeddings: {fasttext_features.shape[1]} features")
         else:
-            print("⚠ FastText embeddings: Not available (model not loaded)")
+            print("[WARNING] FastText embeddings: Not available (model not loaded)")
         
         # 2. Hate lexicon similarity features
         lexicon_features = self._extract_lexicon_similarity_features(texts)
         semantic_features.append(lexicon_features)
-        print(f"✓ Hate lexicon similarity: {lexicon_features.shape[1]} features")
+        print(f"[OK] Hate lexicon similarity: {lexicon_features.shape[1]} features")
         
         # Combine semantic features
         if semantic_features:
             combined_semantic = np.hstack(semantic_features)
             self.semantic_feature_names = [f"semantic_{i}" for i in range(combined_semantic.shape[1])]
-            print(f"✓ Total semantic features: {combined_semantic.shape[1]}")
+            print(f"[OK] Total semantic features: {combined_semantic.shape[1]}")
             return combined_semantic
         else:
             # Return dummy features if no semantic features available
             dummy_features = np.zeros((len(texts), 1))
             self.semantic_feature_names = ["semantic_dummy"]
-            print("⚠ No semantic features available, using dummy features")
+            print("[WARNING] No semantic features available, using dummy features")
             return dummy_features
     
     def _transform_semantic_view(self, texts: List[str]) -> np.ndarray:
@@ -745,7 +745,7 @@ class MultiViewFeatureEngineering:
             'textblob_polarity', 'textblob_subjectivity'
         ]
         
-        print(f"✓ Stylistic features: {stylistic_array.shape[1]} features")
+        print(f"[OK] Stylistic features: {stylistic_array.shape[1]} features")
         print(f"  - Text statistics: uppercase, punctuation, word/char counts")
         print(f"  - Sentiment analysis: VADER + TextBlob")
         
@@ -882,7 +882,7 @@ class MultiViewFeatureEngineering:
             # Use FeatureUnion combined features (already normalized)
             combined = features_dict['combined']
             
-            print(f"\n✓ FeatureUnion combined features: {combined.shape[1]} total")
+            print(f"\n[OK] FeatureUnion combined features: {combined.shape[1]} total")
             print(f"  - Lexical (sparse): {features_dict['lexical'].shape[1]}")
             print(f"  - Semantic (dense, normalized): {features_dict['semantic'].shape[1]}")
             print(f"  - Stylistic (dense, normalized): {features_dict['stylistic'].shape[1]}")
@@ -908,7 +908,7 @@ class MultiViewFeatureEngineering:
                     features_dict['stylistic']
                 ])
             
-            print(f"\n✓ Concatenated features: {combined.shape[1]} total")
+            print(f"\n[OK] Concatenated features: {combined.shape[1]} total")
             print(f"  - Lexical: {features_dict['lexical'].shape[1]}")
             print(f"  - Semantic: {features_dict['semantic'].shape[1]}")
             print(f"  - Stylistic: {features_dict['stylistic'].shape[1]}")
@@ -973,7 +973,7 @@ def create_multi_view_features(train_texts: List[str],
         print(f"  {info['description']}")
     
     if use_feature_union:
-        print(f"\n🔗 FEATURE FUSION: FeatureUnion with proper normalization")
+        print(f"\n[LINK] FEATURE FUSION: FeatureUnion with proper normalization")
         print(f"  - Sparse features (lexical): No normalization (TF-IDF)")
         print(f"  - Dense features (semantic, stylistic): Z-score normalization")
         print(f"  - Hybrid matrix: Sparse + dense combination")

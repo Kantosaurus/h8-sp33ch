@@ -150,11 +150,50 @@ class BoostedStackingEnsemble:
                 features = features_dict.get('stylistic', np.zeros((features_dict['lexical'].shape[0], 14)))
             elif feature_space == 'hybrid':
                 # Combine all features for hybrid model
-                features = np.hstack([
-                    features_dict.get('lexical', np.zeros((features_dict['semantic'].shape[0], 1000))),
-                    features_dict.get('semantic', np.zeros((features_dict['lexical'].shape[0], 300))),
-                    features_dict.get('stylistic', np.zeros((features_dict['lexical'].shape[0], 14)))
-                ])
+                # Get the number of samples from the first available feature
+                n_samples = None
+                for key in ['lexical', 'semantic', 'stylistic']:
+                    if key in features_dict:
+                        if hasattr(features_dict[key], 'shape'):
+                            n_samples = features_dict[key].shape[0]
+                            break
+                        else:
+                            n_samples = len(features_dict[key])
+                            break
+                
+                if n_samples is None:
+                    raise ValueError("No features found in features_dict")
+                
+                # Ensure all features are 2D and have the same number of samples
+                lexical_features = features_dict.get('lexical', np.zeros((n_samples, 1000)))
+                semantic_features = features_dict.get('semantic', np.zeros((n_samples, 300)))
+                stylistic_features = features_dict.get('stylistic', np.zeros((n_samples, 14)))
+                
+                # Handle sparse matrices and ensure 2D
+                if hasattr(lexical_features, 'toarray'):
+                    lexical_features = lexical_features.toarray()
+                if hasattr(semantic_features, 'toarray'):
+                    semantic_features = semantic_features.toarray()
+                if hasattr(stylistic_features, 'toarray'):
+                    stylistic_features = stylistic_features.toarray()
+                
+                # Ensure 2D arrays
+                if lexical_features.ndim == 1:
+                    lexical_features = lexical_features.reshape(-1, 1)
+                if semantic_features.ndim == 1:
+                    semantic_features = semantic_features.reshape(-1, 1)
+                if stylistic_features.ndim == 1:
+                    stylistic_features = stylistic_features.reshape(-1, 1)
+                
+                # Ensure correct number of samples
+                if lexical_features.shape[0] != n_samples:
+                    lexical_features = lexical_features[:n_samples]
+                if semantic_features.shape[0] != n_samples:
+                    semantic_features = semantic_features[:n_samples]
+                if stylistic_features.shape[0] != n_samples:
+                    stylistic_features = stylistic_features[:n_samples]
+                
+                features = np.hstack([lexical_features, semantic_features, stylistic_features])
             
             # Handle sparse matrices
             if hasattr(features, 'toarray'):
@@ -228,7 +267,7 @@ class BoostedStackingEnsemble:
         decision_features = self._extract_decision_functions(features_dict, is_training)
         meta_features = np.column_stack([meta_features, decision_features])
         
-        print(f"✓ Extracted {meta_features.shape[1]} meta-features (including decision functions)")
+        print(f"[OK] Extracted {meta_features.shape[1]} meta-features (including decision functions)")
         return meta_features
     
     def _extract_advanced_meta_features(self, base_meta_features: np.ndarray, 

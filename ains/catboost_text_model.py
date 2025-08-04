@@ -150,7 +150,7 @@ class CatBoostTextModel:
         for key in stats:
             stats[key] = np.array(stats[key])
         
-        print(f"✓ Extracted {len(stats)} text statistics")
+        print(f"[OK] Extracted {len(stats)} text statistics")
         return stats
     
     def train(self, texts: List[str], y: np.ndarray, 

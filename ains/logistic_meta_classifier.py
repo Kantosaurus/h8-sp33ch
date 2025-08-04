@@ -53,7 +53,7 @@ class LogisticMetaClassifier:
             view_specialized_models: ViewSpecializedModels instance
         """
         self.view_specialized_models = view_specialized_models
-        print("✓ View-specialized models linked to meta-classifier")
+        print("[OK] View-specialized models linked to meta-classifier")
     
     def extract_meta_features(self, features_dict: Dict[str, np.ndarray]) -> np.ndarray:
         """
@@ -232,7 +232,7 @@ class LogisticMetaClassifier:
         # Update optimal threshold
         self.optimal_threshold = best_thresh
         
-        print(f"✓ Optimal threshold: {best_thresh:.3f} (F1-score: {best_f1:.4f})")
+        print(f"[OK] Optimal threshold: {best_thresh:.3f} (F1-score: {best_f1:.4f})")
         
         return best_thresh
     

@@ -23,7 +23,7 @@ class AdaBoostModel:
         )
         
         self.model = AdaBoostClassifier(
-            base_estimator=base_estimator,
+            estimator=base_estimator,
             n_estimators=100,
             learning_rate=1.0,
             random_state=random_state

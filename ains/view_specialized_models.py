@@ -66,7 +66,7 @@ class ViewSpecializedModels:
             )
         else:
             # Fallback to Random Forest if CatBoost not available
-            print("⚠ CatBoost not available, using Random Forest for semantic view")
+            print("[WARNING] CatBoost not available, using Random Forest for semantic view")
             self.models['semantic'] = RandomForestClassifier(
                 n_estimators=100,
                 max_depth=10,
@@ -87,7 +87,7 @@ class ViewSpecializedModels:
             oob_score=True  # Out-of-bag score for validation
         )
         
-        print("✓ View-specialized models initialized:")
+        print("[OK] View-specialized models initialized:")
         print(f"  - Lexical: Logistic Regression (sparse binary)")
         print(f"  - Semantic: {'CatBoost' if CATBOOST_AVAILABLE else 'Random Forest'} (dense features)")
         print(f"  - Stylistic: Random Forest (nonlinear, discretes)")
@@ -143,7 +143,7 @@ class ViewSpecializedModels:
                 'feature_shape': X.shape
             }
             
-            print(f"✓ {view_name} model trained successfully")
+            print(f"[OK] {view_name} model trained successfully")
         
         self.is_trained = True
         self.results = results
