@@ -1,0 +1,5 @@
+[33mdddb541[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mAins[m[33m)[m created a new type of ensemble model system
+[33m866a625[m[33m ([m[1;31morigin/Ains[m[33m)[m fixed bugs
+[33m957ca39[m improved model performance and added caching for faster loading
+[33m1d8599b[m Updated ensemble model
+[33mc8658a8[m Add initial implementation of a modular hate speech detection ensemble system.
