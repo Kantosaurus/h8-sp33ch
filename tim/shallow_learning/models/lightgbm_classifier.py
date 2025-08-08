@@ -87,6 +87,9 @@ class LightGBMHateSpeechClassifier:
         """Train the LightGBM Classifier"""
         print("Training LightGBM Classifier...")
 
+        # Store validation metrics for comparison
+        self.validation_metrics = {}
+
         # Split training data for validation
         if validation_split > 0:
             X_train_split, X_val, y_train_split, y_val = train_test_split(
@@ -112,6 +115,22 @@ class LightGBMHateSpeechClassifier:
             # Validate
             val_predictions = self.model.predict(X_val)
             val_accuracy = accuracy_score(y_val, val_predictions)
+
+            # Calculate additional metrics
+            from sklearn.metrics import precision_recall_fscore_support
+
+            precision, recall, f1, _ = precision_recall_fscore_support(
+                y_val, val_predictions, average="weighted", zero_division=0
+            )
+
+            # Store metrics
+            self.validation_metrics = {
+                "Accuracy": val_accuracy,
+                "Precision": precision,
+                "Recall": recall,
+                "F1": f1,
+            }
+
             print(f"Validation Accuracy: {val_accuracy:.4f}")
             print("\nValidation Classification Report:")
             print(classification_report(y_val, val_predictions))
@@ -234,10 +253,18 @@ class LightGBMHateSpeechClassifier:
         except Exception as e:
             print(f"Could not plot training history: {e}")
 
-    def save_model(
-        self, model_path="lightgbm_model.pkl", vectorizer_path="tfidf_vectorizer.pkl"
-    ):
+    def save_model(self, model_path=None, vectorizer_path=None):
         """Save trained model and vectorizer"""
+        # Create model-specific directory
+        model_dir = "lightgbm_outputs"
+        os.makedirs(model_dir, exist_ok=True)
+
+        # Set default paths within the model directory
+        if model_path is None:
+            model_path = os.path.join(model_dir, "lightgbm_model.pkl")
+        if vectorizer_path is None:
+            vectorizer_path = os.path.join(model_dir, "tfidf_vectorizer.pkl")
+
         print(f"Saving model to {model_path}")
         with open(model_path, "wb") as f:
             pickle.dump(self.model, f)
@@ -246,10 +273,26 @@ class LightGBMHateSpeechClassifier:
         with open(vectorizer_path, "wb") as f:
             pickle.dump(self.vectorizer, f)
 
-    def load_model(
-        self, model_path="lightgbm_model.pkl", vectorizer_path="tfidf_vectorizer.pkl"
-    ):
+        # Save metrics if available
+        if hasattr(self, "validation_metrics") and self.validation_metrics:
+            metrics_path = os.path.join(model_dir, "metrics.json")
+            print(f"Saving metrics to {metrics_path}")
+            import json
+
+            with open(metrics_path, "w") as f:
+                json.dump(self.validation_metrics, f, indent=2)
+
+    def load_model(self, model_path=None, vectorizer_path=None):
         """Load trained model and vectorizer"""
+        # Use model-specific directory
+        model_dir = "lightgbm_outputs"
+
+        # Set default paths within the model directory
+        if model_path is None:
+            model_path = os.path.join(model_dir, "lightgbm_model.pkl")
+        if vectorizer_path is None:
+            vectorizer_path = os.path.join(model_dir, "tfidf_vectorizer.pkl")
+
         print(f"Loading model from {model_path}")
         with open(model_path, "rb") as f:
             self.model = pickle.load(f)
@@ -258,10 +301,16 @@ class LightGBMHateSpeechClassifier:
         with open(vectorizer_path, "rb") as f:
             self.vectorizer = pickle.load(f)
 
-    def create_submission(
-        self, predictions, test_ids, output_path="submission_lightgbm.csv"
-    ):
+    def create_submission(self, predictions, test_ids, output_path=None):
         """Create submission file for Kaggle"""
+        # Create model-specific directory if not exists
+        model_dir = "lightgbm_outputs"
+        os.makedirs(model_dir, exist_ok=True)
+
+        # Set default output path within the model directory
+        if output_path is None:
+            output_path = os.path.join(model_dir, "submission_lightgbm.csv")
+
         submission = pd.DataFrame({"row ID": test_ids, "label": predictions})
         submission.to_csv(output_path, index=False)
         print(f"Submission saved to {output_path}")
