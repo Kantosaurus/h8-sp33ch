@@ -31,11 +31,12 @@ def evaluate_model_performance(model, X_text, y_true, cv_folds=5):
         y_train_fold = y_true[train_idx]
         y_val_fold = y_true[val_idx]
         
-        # Create fresh model for this fold
+        # Create fresh model for this fold with enhanced configuration
         fold_model = DeepEnsembleClassifier(
-            n_hidden_layers=3,
-            models_per_layer=6,
-            random_state=42 + fold
+            n_hidden_layers=4,
+            models_per_layer=8,
+            random_state=42 + fold,
+            focus_on_minority_class=True
         )
         
         # Train and evaluate
@@ -189,12 +190,13 @@ def main():
     print(f"Final training samples: {len(X_train_text)}")
     print(f"Class distribution: {np.bincount(y_train)}")
     
-    # Create and train the deep ensemble
-    print(f"\nCreating Deep Ensemble Classifier...")
+    # Create and train the deep ensemble with enhanced configuration for macro F1
+    print(f"\nCreating Enhanced Deep Ensemble Classifier for Hate Speech Detection...")
     deep_ensemble = DeepEnsembleClassifier(
-        n_hidden_layers=3,  # 3 hidden layers like a deep network
-        models_per_layer=6,  # 6 models per layer
-        random_state=42
+        n_hidden_layers=4,  # 4 hidden layers for more complexity
+        models_per_layer=8,  # 8 models per layer for better diversity
+        random_state=42,
+        focus_on_minority_class=True  # Aggressive focus on hate speech detection
     )
     
     # Train the model
@@ -239,8 +241,8 @@ def main():
     print("TRAINING COMPLETED SUCCESSFULLY!")
     print("="*80)
     print(f"Cross-validation Macro F1: {np.mean(cv_scores):.4f} (+/- {np.std(cv_scores) * 2:.4f})")
-    print(f"Network Architecture: Input → 3 Hidden Layers → Output")
-    print(f"Total Models Trained: {3 * 6 + 5} (18 hidden + 5 output)")
+    print(f"Network Architecture: Input → 4 Hidden Layers → Output")
+    print(f"Total Models Trained: {4 * 8 + 5} (32 hidden + 5 output)")
     print(f"Test Predictions: {len(test_predictions)} samples")
     print(f"Files generated:")
     print(f"  - deep_ensemble_model.pkl")
