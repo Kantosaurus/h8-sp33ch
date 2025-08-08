@@ -73,6 +73,34 @@ def run_model(model_name):
             from ensemble_classifier import main
 
             main()
+        elif model_name == "pca":
+            from pca_classifier import main
+
+            main()
+        elif model_name == "logistic_regression":
+            from logistic_regression_classifier import main
+
+            main()
+        elif model_name == "svm":
+            from svm_classifier import main
+
+            main()
+        elif model_name == "naive_bayes":
+            from naive_bayes_classifier import main
+
+            main()
+        elif model_name == "adaboost":
+            from adaboost_classifier import main
+
+            main()
+        elif model_name == "bagging":
+            from bagging_classifier import main
+
+            main()
+        elif model_name == "voting":
+            from voting_classifier import main
+
+            main()
         else:
             print(f"Unknown model: {model_name}")
             return False, None
@@ -107,6 +135,13 @@ def extract_model_metrics(model_name, execution_time):
         "ridge": "ridge_outputs",
         "knn": "knn_outputs",
         "ensemble": "ensemble_outputs",
+        "pca": "pca_outputs",
+        "logistic_regression": "logistic_regression_outputs",
+        "svm": "svm_outputs",
+        "naive_bayes": "naive_bayes_outputs",
+        "adaboost": "adaboost_outputs",
+        "bagging": "bagging_outputs",
+        "voting": "voting_outputs",
     }
 
     metrics = {
@@ -151,6 +186,13 @@ def run_all_models():
         "gradient_boosting",
         "ridge",
         "knn",
+        "pca",
+        "logistic_regression",
+        "svm",
+        "naive_bayes",
+        "adaboost",
+        "bagging",
+        "voting",
         "ensemble",  # Run last since it depends on other models
     ]
 
@@ -310,6 +352,13 @@ def compare_models(model_names=None):
             "gradient_boosting",
             "ridge",
             "knn",
+            "pca",
+            "logistic_regression",
+            "svm",
+            "naive_bayes",
+            "adaboost",
+            "bagging",
+            "voting",
             "ensemble",
         ]
 
@@ -348,6 +397,34 @@ def list_available_models():
         ("gradient_boosting", "Gradient Boosting Classifier - 72.88% accuracy"),
         ("ridge", "Ridge Classifier - 71.39% accuracy"),
         ("knn", "K-Nearest Neighbors Classifier - Performance TBD"),
+        (
+            "pca",
+            "PCA + Adam Optimizer Classifier - Dimensionality reduction with adaptive optimization",
+        ),
+        (
+            "logistic_regression",
+            "Logistic Regression with PCA/TruncatedSVD - Linear classification with regularization",
+        ),
+        (
+            "svm",
+            "Support Vector Machine with PCA - Kernel-based classification with dimensionality reduction",
+        ),
+        (
+            "naive_bayes",
+            "Naive Bayes Suite - Multinomial, Complement, and Bernoulli variants",
+        ),
+        (
+            "adaboost",
+            "AdaBoost Classifier - Adaptive boosting with decision tree base estimators",
+        ),
+        (
+            "bagging",
+            "Bagging Classifier - Bootstrap aggregating with PCA preprocessing",
+        ),
+        (
+            "voting",
+            "Voting Ensemble - Soft/hard voting combining multiple diverse estimators",
+        ),
         ("ensemble", "Ensemble Classifier - Combines top 5 models"),
     ]
 

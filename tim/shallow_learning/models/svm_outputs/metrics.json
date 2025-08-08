@@ -1,0 +1,15 @@
+{
+  "Model": "svm",
+  "Accuracy": 0.5562990980506255,
+  "Precision": 0.5715194720926834,
+  "Recall": 0.5562990980506255,
+  "F1": 0.5615091827789959,
+  "CV_Mean": 0.7140944619990022,
+  "CV_Std": 0.005292824044638016,
+  "Kernel": "rbf",
+  "C": 1.0,
+  "Gamma": "scale",
+  "PCA_Components": 300,
+  "Explained_Variance": 0.29193495544352643,
+  "Support_Vectors": 10634
+}
