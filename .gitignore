@@ -1,2 +1,40 @@
 data/
 *.csv
+
+# Model files and training artifacts
+*.pkl
+*.cbm
+*.h5
+*.pt
+*.pth
+*.onnx
+*.joblib
+
+# Model training directories and logs
+catboost_info/
+**/catboost_info/
+runs/
+logs/
+tensorboard_logs/
+mlruns/
+
+# Cache directories
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Large submission files (keep only small ones for reference)
+submission_*.csv
+!sample_submission.csv
+
+# Temporary files
+tmp/
+temp/
+**/tmp/
+**/temp/
