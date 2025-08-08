@@ -69,6 +69,10 @@ def run_model(model_name):
             from knn_classifier import main
 
             main()
+        elif model_name == "ensemble":
+            from ensemble_classifier import main
+
+            main()
         else:
             print(f"Unknown model: {model_name}")
             return False, None
@@ -102,6 +106,7 @@ def extract_model_metrics(model_name, execution_time):
         "gradient_boosting": "gradient_boosting_outputs",
         "ridge": "ridge_outputs",
         "knn": "knn_outputs",
+        "ensemble": "ensemble_outputs",
     }
 
     metrics = {
@@ -146,6 +151,7 @@ def run_all_models():
         "gradient_boosting",
         "ridge",
         "knn",
+        "ensemble",  # Run last since it depends on other models
     ]
 
     print("Running all machine learning models for hate speech classification...")
@@ -304,6 +310,7 @@ def compare_models(model_names=None):
             "gradient_boosting",
             "ridge",
             "knn",
+            "ensemble",
         ]
 
     print(f"\n{'='*60}")
@@ -341,6 +348,7 @@ def list_available_models():
         ("gradient_boosting", "Gradient Boosting Classifier - 72.88% accuracy"),
         ("ridge", "Ridge Classifier - 71.39% accuracy"),
         ("knn", "K-Nearest Neighbors Classifier - Performance TBD"),
+        ("ensemble", "Ensemble Classifier - Combines top 5 models"),
     ]
 
     print("Available models:")
