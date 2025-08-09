@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.model_selection import StratifiedKFold
+from skopt import BayesSearchCV
+from skopt.space import Real, Integer, Categorical
 import warnings
 warnings.filterwarnings('ignore')
 
