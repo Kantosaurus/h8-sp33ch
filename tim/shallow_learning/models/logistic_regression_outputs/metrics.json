@@ -1,0 +1,14 @@
+{
+  "Model": "logistic_regression",
+  "Accuracy": 0.5586267093395403,
+  "Precision": 0.5686540033246597,
+  "Recall": 0.5586267093395404,
+  "F1": 0.5625697015578262,
+  "CV_Mean": 0.7130466304676595,
+  "CV_Std": 0.0038428936255456734,
+  "Dim_Reduction": "truncatedsvd",
+  "N_Components": 500,
+  "C": 1.0,
+  "Max_Iter": 1000,
+  "Explained_Variance": 0.34046110035085464
+}

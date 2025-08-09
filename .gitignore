@@ -1,8 +1,184 @@
+# Data files
 data/
 *.csv
+
 
 # Ignore macOS system files
 .DS_Store
 
 # Ignore Python cache files
 __pycache__/
+
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.json
+*.xml
+*.zip
+*.tar.gz
+*.rar
+
+# Model files and checkpoints
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.pb
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.weights
+*.bin
+*.model
+
+# Training artifacts
+catboost_info/
+lightgbm_model.txt
+xgboost_model.json
+*.log
+*.out
+*.err
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+.ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+logs/
+temp/
+tmp/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Output files from training
+predictions.csv
+prediction_analysis.csv
+evaluation_results.csv
+submission.csv
+deep_ensemble_predictions.csv
+deep_ensemble_analysis.csv
+network_summary.txt
+
+# Keep these files (Python code and requirements)
+!requirements.txt
+!*.py
+!README.md
+!*.md
+=======
+
+# Model files and training artifacts
+*.pkl
+*.cbm
+*.h5
+*.pt
+*.pth
+*.onnx
+*.joblib
+
+# Model training directories and logs
+catboost_info/
+**/catboost_info/
+runs/
+logs/
+tensorboard_logs/
+mlruns/
+
+# Cache directories
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Large submission files (keep only small ones for reference)
+submission_*.csv
+!sample_submission.csv
+
+# Temporary files
+tmp/
+temp/
+**/tmp/
+**/temp/
