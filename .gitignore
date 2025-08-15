@@ -1,5 +1,4 @@
 data/
-*.csv
 
 # Model files and training artifacts
 *.pkl
