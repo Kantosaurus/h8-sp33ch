@@ -188,4 +188,19 @@ class LinearSVCModel:
             'max_iter': base_estimator.max_iter,
             'dual': base_estimator.dual,
             'best_params': self.best_params
-        } 
+        }
+
+if __name__ == "__main__":
+    from data_utils import load_and_preprocess_data
+    
+    # Load and preprocess data
+    X_train, X_test, y_train, y_test, vectorizer = load_and_preprocess_data()
+    
+    # Create and train model
+    model = LinearSVCModel()
+    cv_results = model.train(X_train, y_train)
+    
+    # Evaluate model
+    test_results = model.evaluate(X_test, y_test)
+    
+    print("\nLinear SVC Model Training Complete!")

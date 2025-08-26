@@ -103,3 +103,18 @@ class LogisticRegressionModel:
             return importance_df
         else:
             return importance 
+
+if __name__ == "__main__":
+    from data_utils import load_and_preprocess_data
+    
+    # Load and preprocess data
+    X_train, X_test, y_train, y_test, vectorizer = load_and_preprocess_data()
+    
+    # Create and train model
+    model = LogisticRegressionModel()
+    cv_results = model.train(X_train, y_train)
+    
+    # Evaluate model
+    test_results = model.evaluate(X_test, y_test)
+    
+    print("\nLogistic Regression Model Training Complete!")
